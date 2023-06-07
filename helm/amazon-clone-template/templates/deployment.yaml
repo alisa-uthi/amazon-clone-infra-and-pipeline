@@ -1,0 +1,51 @@
+{{- $envConfig := get .Values.environment .Values.deploymentEnvironment }}
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.projectName }}
+  namespace: {{ include "amazon-clone-template.namespace" . }}
+  labels:
+    {{- include "amazon-clone-template.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "amazon-clone-template.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "amazon-clone-template.selectorLabels" . | nindent 8 }}
+    spec:
+      containers:
+        - name: "{{- include "amazon-clone-template.containerName" . }}"
+          image: "{{ .Values.image.repository }}:{{ .Values.imageVersion }}"
+          imagePullPolicy: {{ .Values.image.imagePullPolicy }}
+          {{- if .Values.resources }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          {{- end }}
+          ports:
+          - containerPort: {{ .Values.service.targetPort }}
+          volumeMounts:
+            - name: application-config
+              mountPath: "/config"   # https://docs.spring.io/spring-boot/docs/1.0.1.RELEASE/reference/html/boot-features-external-config.html#boot-features-external-config-application-property-files
+              readOnly: true
+            # - name: logging-config
+            #   mountPath: "/logback"
+            #   readOnly: true
+      
+      # TODO: Checkout https://spring.io/guides/topicals/spring-on-kubernetes/ for readiness and liveliness
+
+      volumes:
+        - name: application-config
+          secret:
+            secretName: "{{- include "amazon-clone-template.fullname" . }}-{{ .Values.deploymentEnvironment }}"
+            items:
+              - key: "{{- include "amazon-clone-template.fullname" . }}-{{ .Values.deploymentEnvironment }}.yaml"
+                path: application.yaml
+        # - name: logging-config
+        #   configMap:
+        #     name: {{ .Values.logbackName }}-{{ .Values.deploymentEnvironment }}
+        #     items:
+        #       - key: {{ .Values.logbackName }}-{{ .Values.deploymentEnvironment }}.xml
+        #         path: logback-spring.xml

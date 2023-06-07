@@ -1,0 +1,21 @@
+fullnameOverride: simple-rest-api
+projectName: backend
+
+image:
+  repository: alisauthi/simple-rest-api
+  imagePullPolicy: Always
+
+# resources:
+#   limits:
+#     memory: "128Mi"
+#     cpu: "500m"
+
+environment:
+  dev:
+    replicaCount: 1
+  st:
+    replicaCount: 1
+  uat:
+    replicaCount: 1
+  prd:
+    replicaCount: 3

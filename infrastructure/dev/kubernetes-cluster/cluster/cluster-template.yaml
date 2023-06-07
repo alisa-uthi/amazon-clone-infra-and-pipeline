@@ -1,0 +1,114 @@
+# !For HA, we should create one control plane and one node per AZ. But for practicing purpose, I won't do that :)
+
+apiVersion: kops.k8s.io/v1alpha2
+kind: Cluster
+metadata:
+  name: {{ .kubernetes_cluster_name.value }}
+spec:
+  api:
+    dns: {}
+  authorization:
+    rbac: {}
+  channel: stable
+  cloudProvider: aws
+  configBase: s3://{{ .bucket_name }}/{{ .kubernetes_cluster_name.value }}
+  dnsZone: {{ .kubernetes_cluster_name.value }}
+  
+  etcdClusters:
+  - cpuRequest: 200m
+    etcdMembers:
+    - encryptedVolume: true
+      instanceGroup: control-plane-{{ first .availability_zones.value }}
+      name: {{ first .availability_zones.value | replace $.region.value "" }}
+    memoryRequest: 100Mi
+    name: main
+  - cpuRequest: 100m
+    etcdMembers:
+    - encryptedVolume: true
+      instanceGroup: control-plane-{{ first .availability_zones.value }}
+      name: {{ first .availability_zones.value | replace $.region.value "" }}
+    memoryRequest: 100Mi
+    name: events
+  iam:
+    allowContainerRegistry: true
+    legacy: false
+  kubeProxy:
+    enabled: false
+  kubelet:
+    anonymousAuth: false
+  kubernetesApiAccess:
+  - 0.0.0.0/0
+  - ::/0
+  kubernetesVersion: 1.26.5
+  masterPublicName: api.{{ .kubernetes_cluster_name.value }}
+  networkCIDR: {{ .vpc_cidr_block.value }}
+  networkID: {{ .vpc_id.value }}
+  networking:
+    cilium:
+      enableNodePort: true
+  nonMasqueradeCIDR: 100.64.0.0/10
+  sshAccess:
+  - 0.0.0.0/0
+  - ::/0
+  subnets:
+  # Public subnets, one per AZ
+  {{ range $i, $az := .public_subnets.value }}
+  - id: {{ index $.public_subnet_ids.value $i }}
+    cidr: {{ . }}
+    name: {{ index $.availability_zones.value $i }}
+    type: Public
+    zone: {{ index $.availability_zones.value $i }}
+  {{ end }}
+  # TODO: Enable Private subnet later
+
+  topology:
+    dns:
+      type: Public
+    masters: public   # TODO: Change to "private" later
+    nodes: public     # TODO: Change to "private" later
+
+---
+
+# Control Plane
+apiVersion: kops.k8s.io/v1alpha2
+kind: InstanceGroup
+metadata:
+  labels:
+    kops.k8s.io/cluster: {{ .kubernetes_cluster_name.value }}
+  name: control-plane-{{ first .availability_zones.value }}
+spec:
+  image: 099720109477/ubuntu/images/hvm-ssd/ubuntu-focal-20.04-amd64-server-20230502
+  instanceMetadata:
+    httpPutResponseHopLimit: 3
+    httpTokens: required
+  machineType: t3.medium
+  maxSize: 0
+  minSize: 0
+  role: Master
+  rootVolumeSize: 8
+  subnets:
+  - {{ first .availability_zones.value }}
+
+---
+# Nodes
+apiVersion: kops.k8s.io/v1alpha2
+kind: InstanceGroup
+metadata:
+  generation: 3
+  labels:
+    kops.k8s.io/cluster: {{ $.kubernetes_cluster_name.value }}
+  name: nodes-{{ first .availability_zones.value }}
+spec:
+  image: 099720109477/ubuntu/images/hvm-ssd/ubuntu-focal-20.04-amd64-server-20230502
+  instanceMetadata:
+    httpPutResponseHopLimit: 1
+    httpTokens: required
+  machineType: t3.small
+  maxSize: 0
+  minSize: 0
+  role: Node
+  rootVolumeSize: 8
+  subnets:
+  - {{ first .availability_zones.value }}
+
+---
