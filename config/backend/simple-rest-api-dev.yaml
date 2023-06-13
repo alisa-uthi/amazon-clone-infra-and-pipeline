@@ -1,3 +1,14 @@
 spring:
   application:
     name: simple-rest-api
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+  
+  datasource:
+    url: jdbc:mysql://simple-rest-api.c3qu1hehhhiv.us-east-1.rds.amazonaws.com:3306/myuser
+    username: simplerestuser
+    password: simplerestapipassword
+    driver-class-name: com.mysql.cj.jdbc.Driver
