@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ .Values.projectName }}
+  name: "{{- include "amazon-clone-template.containerName" . }}"
   namespace: {{ include "amazon-clone-template.namespace" . }}
   labels:
     {{- include "amazon-clone-template.labels" . | nindent 4 }}

@@ -10,6 +10,9 @@ image:
 #     memory: "128Mi"
 #     cpu: "500m"
 
+probeUrl:
+  enabled: true
+
 environment:
   dev:
     replicaCount: 1

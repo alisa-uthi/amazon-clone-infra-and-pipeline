@@ -12,3 +12,13 @@ spring:
     username: simplerestuser
     password: simplerestapipassword
     driver-class-name: com.mysql.cj.jdbc.Driver
+
+# https://www.baeldung.com/spring-boot-actuators
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, metric, info, prometheus
+  endpoint:
+    health:
+      show-details: always

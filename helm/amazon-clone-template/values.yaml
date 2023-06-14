@@ -25,6 +25,9 @@ environment:
     suffixNamespace: true
     defaultReplicas: 1
 
+probeUrl:
+  enabled: false
+
 # serviceAccount:
 #   # Specifies whether a service account should be created
 #   create: true
