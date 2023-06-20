@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+    <include resource="org/springframework/boot/logging/logback/console-appender.xml"/>
+
+    <springProperty scope="context" name="application_name" source="spring.application.name"/>
+
+    <!--    Log shown in console with new pattern -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <!-- <encoder>
+            <pattern>%d{yyyy-MM-dd'T'HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder> -->
+
+        <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
+            <jsonGeneratorDecorator class="net.logstash.logback.mask.MaskingJsonGeneratorDecorator"/>
+            <providers>
+                <timestamp/>
+                <version/>
+                <loggerName/>
+                <logLevel/>
+                <threadName/>
+                <message/>
+                <stackTrace/>
+                <mdc>
+                    <excludeMdcKeyName>Authorization</excludeMdcKeyName>
+                </mdc>
+                <pattern>
+                    <pattern>
+                        {
+                        "application_name": "${application_name}"
+                        }
+                    </pattern>
+                    <omitEmptyFields>true</omitEmptyFields>
+                </pattern>
+            </providers>
+        </encoder>
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+    </root>
+
+    <!--    See: https://www.baeldung.com/logback#5-modifying-loggers -->
+    <!--    How to modify logger if we have multiple logger -->
+    <logger name="com.alisa.amazon.clone.backend" level="DEBUG" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+
+</configuration>

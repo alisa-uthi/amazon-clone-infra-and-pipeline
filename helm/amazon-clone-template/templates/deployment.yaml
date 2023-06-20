@@ -34,25 +34,25 @@ spec:
             - name: application-config
               mountPath: "/config"   # https://docs.spring.io/spring-boot/docs/1.0.1.RELEASE/reference/html/boot-features-external-config.html#boot-features-external-config-application-property-files
               readOnly: true
-            # - name: logging-config
-            #   mountPath: "/logback"
-            #   readOnly: true
+            - name: logging-config
+              mountPath: "/logback"
+              readOnly: true
       
           {{- if .Values.probeUrl.enabled }}
           livenessProbe:
             httpGet:
               path: /actuator/health/liveness
               port: 8080
-            initialDelaySeconds: 20
+            initialDelaySeconds: 100
             periodSeconds: 30
-            timeoutSeconds: 10
+            timeoutSeconds: 30
           readinessProbe:
             httpGet:
               path: /actuator/health/readiness
               port: 8080
-            initialDelaySeconds: 20
+            initialDelaySeconds: 100
             periodSeconds: 30
-            timeoutSeconds: 10
+            timeoutSeconds: 30
           {{- end }}
 
       volumes:
@@ -62,9 +62,9 @@ spec:
             items:
               - key: "{{- include "amazon-clone-template.fullname" . }}-{{ .Values.deploymentEnvironment }}.yaml"
                 path: application.yaml
-        # - name: logging-config
-        #   configMap:
-        #     name: {{ .Values.logbackName }}-{{ .Values.deploymentEnvironment }}
-        #     items:
-        #       - key: {{ .Values.logbackName }}-{{ .Values.deploymentEnvironment }}.xml
-        #         path: logback-spring.xml
+        - name: logging-config
+          configMap:
+            name: {{ .Values.logbackName }}-{{ .Values.deploymentEnvironment }}
+            items:
+              - key: {{ .Values.logbackName }}-{{ .Values.deploymentEnvironment }}.xml
+                path: logback-spring.xml

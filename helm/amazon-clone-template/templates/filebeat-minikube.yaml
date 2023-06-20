@@ -1,30 +1,66 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: filebeat
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: filebeat
+rules:
+- apiGroups: [""] # "" indicates the core API group
+  resources:
+  - namespaces
+  - pods
+  - nodes
+  verbs:
+  - get
+  - watch
+  - list
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: filebeat
+subjects:
+- kind: ServiceAccount
+  name: filebeat
+  namespace: default
+roleRef:
+  kind: ClusterRole
+  name: filebeat
+  apiGroup: rbac.authorization.k8s.io
+---
 apiVersion: beat.k8s.elastic.co/v1beta1
 kind: Beat
 metadata:
   name: filebeat
-  namespace: log-monitoring
 spec:
   type: filebeat
-  version: 8.7.0
-  elasticsearchRef:
-    name: elasticsearch
-    namespace: log-monitoring
-  kibanaRef:
-    name: kibana
-    namespace: log-monitoring
+  version: 7.17.0
   config:
     filebeat.inputs:
-    - type: container
+    - type: filestream
       exclude_lines: ['^WARN']
-      json.keys_under_root: true
-      json.add_error_key: true
-      json.message_key: log
+      parsers:
+      - ndjson:
+          target: ""
+          add_error_key: true
+          message_key: log
+      - multiline:
+          type: pattern
+          pattern: '^[[:space:]]+(at|\.{3})[[:space:]]+\b|^Caused by:'
+          negate: false
+          match: after
+      - container:
+          stream: stdout
       paths: 
         - '/var/log/containers/*.log'
     filebeat.autodiscover.providers:
     - node: ${NODE_NAME}
       type: kubernetes
-      hints.default_config.enabled: "false"
+      hints.enabled: "false"
       templates:
       - condition.equals.kubernetes.namespace: backend-dev  # TODO
         config:
@@ -36,9 +72,13 @@ spec:
           matchers:
           - logs_path:
               logs_path: "/var/log/containers"  
-    filebeat.output.elasticsearch:
+      - decode_json_fields:
+          fields: "log"
+          overwrite_keys: true
+    output.elasticsearch:
+      hosts: ["host.minikube.internal:9200"]    # TODO
       indices:
-      - index: "${[kubernetes.namespace]:alisa}-%{[agent.version]}-%{+yyyy.MM.dd}"
+      - index: "{{- include "amazon-clone-template.namespace" . }}-%{[agent.version]}-%{+yyyy.MM.dd}"
         when:
           regexp:
             kubernetes.namespace: ".*"
@@ -76,25 +116,3 @@ spec:
         - name: varlibdockercontainers
           hostPath:
             path: /var/lib/docker/containers
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  name: filebeat
-  namespace: log-monitoring
-rules:
-- apiGroups: [""] # "" indicates the core API group
-  resources:
-  - namespaces
-  - pods
-  - nodes
-  verbs:
-  - get
-  - watch
-  - list
----
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: filebeat
-  namespace: log-monitoring
