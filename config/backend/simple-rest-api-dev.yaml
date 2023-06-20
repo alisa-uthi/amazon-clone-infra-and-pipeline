@@ -1,3 +1,8 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /
+    
 spring:
   application:
     name: simple-rest-api
@@ -5,13 +10,26 @@ spring:
   jpa:
     hibernate:
       ddl-auto: create-drop
-    show-sql: true
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+    show-sql: false
+    generate-ddl: false
+    open-in-view: false
   
   datasource:
     url: jdbc:mysql://simple-rest-api.c3qu1hehhhiv.us-east-1.rds.amazonaws.com:3306/myuser
     username: simplerestuser
     password: simplerestapipassword
-    driver-class-name: com.mysql.cj.jdbc.Driver
+    driverClassName: com.mysql.cj.jdbc.Driver
+    testWhileIdle: true
+    validationQuery: SELECT 1
+    hikari:
+      idleTimeout: 60000
+      minimumIdle: 2
+      maximumPoolSize: 20
+      connectionTimeout: 30000
+      connectionTestQuery: SELECT 1
+      poolName: simple_rest_api_pool
 
 # https://www.baeldung.com/spring-boot-actuators
 management:
@@ -22,3 +40,14 @@ management:
   endpoint:
     health:
       show-details: always
+
+microservice-framework:
+  core:
+    validate-generic-headers: false # Change to true later once x-request-id is ready from client side
+    request-response-log:
+      log-payload: true
+      log-req-headers: true
+      max-payload-size: 3000
+
+logging:
+  config: /logback/logback-spring.xml
